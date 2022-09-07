@@ -5,7 +5,8 @@ __pycache__/
 *$py.class
 
 dataset/
-
+output/
+*.lmdb
 
 # Distribution / packaging
 .Python
