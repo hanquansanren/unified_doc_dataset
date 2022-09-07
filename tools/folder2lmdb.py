@@ -63,7 +63,7 @@ class ImageFolderLMDB(data.Dataset):
         return self.length
 
     def __repr__(self):
-        return self.__class__.__name__ + ' (' + self.db_path + ')'
+        return self.__class__.__mode__ + ' (' + self.db_path + ')'
 
 
 class ImageFolderLMDB_old(data.Dataset):
@@ -111,7 +111,7 @@ class ImageFolderLMDB_old(data.Dataset):
         return self.length
 
     def __repr__(self):
-        return self.__class__.__name__ + ' (' + self.db_path + ')'
+        return self.__class__.__mode__ + ' (' + self.db_path + ')'
 
 
 def raw_reader(path):
@@ -127,16 +127,17 @@ def dumps_pyarrow(obj):
     Returns:
         Implementation-dependent bytes-like object
     """
-    return pa.serialize(obj).to_buffer()
+    # return pa.serialize(obj).to_buffer() # 即将弃用，不推荐使用
+    return pickle.dumps(obj)
 
 
-def folder2lmdb(dpath, name="train", write_frequency=5000, num_workers=16):
-    directory = osp.expanduser(osp.join(dpath, name))
+def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
+    directory = osp.expanduser(osp.join(data_path, mode)) # './dataset/val'
     print("Loading dataset from %s" % directory)
     dataset = ImageFolder(directory, loader=raw_reader)
     data_loader = DataLoader(dataset, num_workers=num_workers, collate_fn=lambda x: x)
 
-    lmdb_path = osp.join(dpath, "%s.lmdb" % name)
+    lmdb_path = osp.join(data_path, "%s.lmdb" % mode) # './dataset/val.lmdb'
     isdir = os.path.isdir(lmdb_path)
 
     print("Generate LMDB to %s" % lmdb_path)
@@ -170,11 +171,11 @@ def folder2lmdb(dpath, name="train", write_frequency=5000, num_workers=16):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--folder", type=str)
+    parser.add_argument("-f", "--folder", type=str, default="./dataset/") 
     parser.add_argument('-s', '--split', type=str, default="val")
-    parser.add_argument('--out', type=str, default=".")
-    parser.add_argument('-p', '--procs', type=int, default=20)
+    parser.add_argument('--out', type=str, default="./")
+    parser.add_argument('-p', '--processes', type=int, default=4) # 进程数
 
     args = parser.parse_args()
 
-    folder2lmdb(args.folder, num_workers=args.procs, name=args.split)
+    folder2lmdb(args.folder, num_workers=args.processes, mode=args.split)
