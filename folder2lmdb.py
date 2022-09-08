@@ -142,7 +142,7 @@ def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
 
     print("Generate LMDB to %s" % lmdb_path)
     db = lmdb.open(lmdb_path, subdir=isdir,
-                   map_size=1099511627776 * 2, readonly=False,
+                   map_size=1099511627776 * 2, readonly=False, # readonly=read only只读
                    meminit=False, map_async=True)
     
     print(len(dataset), len(data_loader))

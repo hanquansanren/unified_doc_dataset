@@ -30,21 +30,25 @@ def check_vis(idx, im, lbl):
 
 
 if __name__ == '__main__':
-    env_db = lmdb.Environment('./test.lmdb')
+    env = lmdb.Environment('./unit_test/train.lmdb')
     # env_db = lmdb.open("./test.lmdb")
-    txn = env_db.begin()
-    
-    # get函数通过键值查询数据,如果要查询的键值没有对应数据，则输出None
-    txn.get(str('d1').encode())
-    print(env_db.stat()) 
-    with env_db.begin() as txn:
-        with txn.cursor() as curs:
-            print('key is:', curs.get('d1'.encode()))
-    
-    print("end")
-    for key, value in txn.cursor():  #遍历
-        print(key, type(value))
-        value=pickle.loads(value)
-        check_vis(8, value['image'], value['label'])
+    txn = env.begin()
+    print(env.stat()) 
 
-    env_db.close()
+
+    # 查看数据
+    txn=env.begin(write=False)
+    for key, value in txn.cursor():
+        key=key.decode()
+        print(key)
+
+    image_bin = txn.get(digital_im_path.encode())
+    # 将二进制文件转为十进制文件（一维数组）
+    image_buf = np.frombuffer(image_bin, dtype=np.uint8)
+    # 将数据转换(解码)成图像格式
+    # cv2.IMREAD_GRAYSCALE为灰度图，cv2.IMREAD_COLOR为彩色图
+    img = cv2.imdecode(image_buf, cv2.IMREAD_COLOR)
+    cv2.imwrite('./unit_test/show.jpg',img)
+    ############################################################
+
+    print("end")

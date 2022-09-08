@@ -4,9 +4,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-dataset/
-output/
+dataset/*
+data_vis/*
+output/*
 *.lmdb
+*.mdb
+*.code-workspace
+*.jpg
+*.png
 
 # Distribution / packaging
 .Python

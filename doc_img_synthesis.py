@@ -28,7 +28,7 @@ class perturbed(sutils.BasePerturbed):
 		self.save_path = save_path
 		self.save_suffix = save_suffix
 
-	def save_img(self, fold_curve='fold', repeat_time=4, fiducial_points = 61, relativeShift_position='relativeShift_v2'):
+	def save_img(self, fold_curve='fold', repeat_time=4, fiducial_points = 61, relativeShift_position='relativeShift_v2', idx= 'd1'):
 		error_flag=0
 		origin_img = cv2.imread(self.path, flags=cv2.IMREAD_COLOR)
 		base_img_bound = [1024, 768]
@@ -570,7 +570,7 @@ class perturbed(sutils.BasePerturbed):
 		###################################################
 		'''
 		if error_flag==1:
-			self.check_vis(0, self.synthesis_perturbed_color[:, :, :3], fiducial_points_coordinate, np.array((segment_x, segment_y)))
+			self.check_vis(0, self.synthesis_perturbed_color[:, :, :3], fiducial_points_coordinate)
 			error_flag=0
 			print("error image has been visualized")
 		
@@ -595,13 +595,21 @@ class perturbed(sutils.BasePerturbed):
 			'image': np.uint8(self.synthesis_perturbed_color[:, :, :3]), # np.float32
 			'label': fiducial_points_coordinate, # np.float64
 		}
-		pickle_perturbed_data = pickle.dumps(synthesis_perturbed_data)
-		print("ok")
-		env = lmdb.open("./test.lmdb", map_size=1099511627776)
+		pickle_perturbed_data = pickle.dumps(synthesis_perturbed_data) # byte类型
+
+
+		env = lmdb.open("./test.lmdb", map_size=1099511627776*2, readonly=False, 
+                   meminit=False, map_async=True)
+
 		txn = env.begin(write=True)
- 
-		# 添加数据和键值
-		txn.put(key = 'd1', value = pickle_perturbed_data)
+		if idx=='d1':
+			txn.put(key = 'd1'.encode(), value = pickle_perturbed_data)
+			print("d1 ok")
+		elif idx=='d2':
+			txn.put(key = 'd2'.encode(), value = pickle_perturbed_data)
+			print("d2 ok")
+		else:
+			print("error idx")
 		txn.commit()
 		env.close()
 
@@ -615,12 +623,13 @@ class perturbed(sutils.BasePerturbed):
 		# return np.uint8(self.synthesis_perturbed_color[:, :, :3]),fiducial_points_coordinate,np.array((segment_x, segment_y))
 		# return np.uint8(self.synthesis_perturbed_color[:, :, :3]),fiducial_points_coordinate
 	
-	def check_vis(self, idx, im, lbl, interval):
+	def check_vis(self, idx, im, lbl, interval=None):
 		'''
 		im : distorted image   # HWC 
 		lbl : fiducial_points  # 61*61*2 
 		'''
 		im=np.uint8(im)
+		im=im[:,:,::-1]
 		h=im.shape[0]*0.01
 		w=im.shape[1]*0.01
 		im = Image.fromarray(im)
@@ -638,7 +647,7 @@ class perturbed(sutils.BasePerturbed):
 		plt.close()
 
 
-def get_syn_image(path, bg_path, save_path, deform_type):
+def get_syn_image(path, bg_path, save_path, deform_type, idx):
 
 	save_suffix = str.split(path, '/')[-2] # 'new'
 
@@ -646,7 +655,7 @@ def get_syn_image(path, bg_path, save_path, deform_type):
 	global begin_train
 	begin_train = time.time()
 	fiducial_points = 61	# or 31
-	process_pool = Pool(8) # max=33
+	process_pool = Pool(10) # max=33
 
 	save_suffix = str.split(path, '/')[-2]+str.split(path, '/')[-1][0:4] # 'new'
 	for m_n in range(10):
@@ -656,13 +665,13 @@ def get_syn_image(path, bg_path, save_path, deform_type):
 				repeat_time = min(max(round(np.random.normal(12, 4)), 1), 18) # 随机折叠次数
 				# repeat_time = min(max(round(np.random.normal(8, 4)), 1), 12)	# random.randint(1, 2)		# min(max(round(np.random.normal(8, 4)), 1), 12)
 				# d,lbl=process_pool.apply_async(func=saveFold.save_img, args=('fold', repeat_time, fiducial_points, 'relativeShift_v2')).get()
-				process_pool.apply_async(func=saveFold.save_img, args=('fold', repeat_time, fiducial_points, 'relativeShift_v2'))
+				process_pool.apply_async(func=saveFold.save_img, args=('fold', repeat_time, fiducial_points, 'relativeShift_v2', idx))
 			elif deform_type=='curve':
 				saveCurve = perturbed(path, all_bgImg_idx, save_path, save_suffix)	
 				repeat_time = min(max(round(np.random.normal(8, 4)), 1), 13) # 随机弯曲次数
 				# repeat_time = min(max(round(np.random.normal(6, 4)), 1), 10)
 				# d,lbl=process_pool.apply_async(func=saveCurve.save_img, args=('curve', repeat_time, fiducial_points, 'relativeShift_v2')).get()
-				process_pool.apply_async(func=saveCurve.save_img, args=('curve', repeat_time, fiducial_points, 'relativeShift_v2'))
+				process_pool.apply_async(func=saveCurve.save_img, args=('curve', repeat_time, fiducial_points, 'relativeShift_v2', idx))
 			else:
 				print('error type')
 		except BaseException as err:
@@ -678,11 +687,28 @@ def get_syn_image(path, bg_path, save_path, deform_type):
 
 if __name__ == '__main__':
 	print("the num of cpu core is {:4d}".format(mp.cpu_count()))
-	im_path = './synthesis_code/rotate/rotate/0141.jpg'
+	im_path = './dataset/train'
 	bg_path = './dataset/background/'
 	save_path = './output/'
 	deform_type_list=['fold','curve']
 	deform_type=np.random.choice(deform_type_list,p=[0.5,0.5])
 	print(deform_type)
-	get_syn_image(path=im_path, bg_path=bg_path,save_path=save_path, deform_type=deform_type)
-	print("over")
+	get_syn_image(path=im_path, bg_path=bg_path,save_path=save_path, deform_type=deform_type, idx='d1')
+	get_syn_image(path=im_path, bg_path=bg_path,save_path=save_path, deform_type=deform_type, idx='d2')
+    
+	env = lmdb.open('./test.lmdb')
+	env_across = lmdb.open('./test_across.lmdb')
+	# agent = env_across.begin()
+	agent = env_across.begin()
+	# print(env_db.stat()) 
+	with env.begin() as txn:
+		with txn.cursor() as curs:
+			print('key is:', curs.get('key'))
+
+    # for key, value in txn.cursor():  #遍历
+    #     print(key, type(value))
+    #     value=pickle.loads(value)
+    #     check_vis(8, value['image'], value['label'])
+
+    # env_db.close()
+	# print("over")
