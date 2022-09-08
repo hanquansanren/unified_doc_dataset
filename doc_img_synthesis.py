@@ -30,6 +30,7 @@ class perturbed(sutils.BasePerturbed):
 		self.save_suffix = save_suffix
 
 	def save_img(self, fold_curve='fold', repeat_time=4, fiducial_points = 61, relativeShift_position='relativeShift_v2', idx= 'd1'):
+		begin_train = time.time()
 		error_flag=0
 		origin_img = cv2.imread(self.path, flags=cv2.IMREAD_COLOR)
 		base_img_bound = [1024, 768]
@@ -663,32 +664,25 @@ def check_vis(idx, im, lbl):
 	plt.close()
 
 def get_syn_image(path, bg_path, deform_type, idx, save_path='./output/'):
-
+	print("begin")
 	save_suffix = str.split(path, '/')[-2] # 'new'
 
 	all_bgImg_idx = os.listdir(bg_path)
-	global begin_train
-	begin_train = time.time()
+	# global begin_train
+	# begin_train = time.time()
 	fiducial_points = 61	# or 31
-	process_pool = Pool(16) # max=33
+	# process_pool = Pool(16) # max=33
 
 	save_suffix = str.split(path, '/')[-2]+str.split(path, '/')[-1][0:4] # 'new'
 	for m_n in range(10):
 		try:
+			save = perturbed(path, all_bgImg_idx, save_path, save_suffix)
 			if deform_type=='fold':
-				saveFold = perturbed(path, all_bgImg_idx, save_path, save_suffix)
 				repeat_time = min(max(round(np.random.normal(12, 4)), 1), 18) # 随机折叠次数
-				# repeat_time = min(max(round(np.random.normal(8, 4)), 1), 12)	# random.randint(1, 2)		# min(max(round(np.random.normal(8, 4)), 1), 12)
-				# d,lbl=process_pool.apply_async(func=saveFold.save_img, args=('fold', repeat_time, fiducial_points, 'relativeShift_v2')).get()
-				pickle_dict=process_pool.apply_async(func=saveFold.save_img, args=('fold', repeat_time, fiducial_points, 'relativeShift_v2', idx)).get()
+				pickle_dict = save.save_img('fold', repeat_time, fiducial_points, 'relativeShift_v2', idx)
 			elif deform_type=='curve':
-				saveCurve = perturbed(path, all_bgImg_idx, save_path, save_suffix)	
 				repeat_time = min(max(round(np.random.normal(8, 4)), 1), 13) # 随机弯曲次数
-				# repeat_time = min(max(round(np.random.normal(6, 4)), 1), 10)
-				# d,lbl=process_pool.apply_async(func=saveCurve.save_img, args=('curve', repeat_time, fiducial_points, 'relativeShift_v2')).get()
-				pickle_dict=process_pool.apply_async(func=saveCurve.save_img, args=('curve', repeat_time, fiducial_points, 'relativeShift_v2', idx)).get()
-			else:
-				print('error type')
+				pickle_dict = save.save_img('curve', repeat_time, fiducial_points, 'relativeShift_v2', idx)
 		except BaseException as err:
 			print('sssssssssssss')
 			print(err)
@@ -696,20 +690,20 @@ def get_syn_image(path, bg_path, deform_type, idx, save_path='./output/'):
 		break
 	# print('end')
 
-	process_pool.close()
-	process_pool.join()
+	# process_pool.close()
+	# process_pool.join()
 	return pickle_dict
 
 def get_wild_img(head_dir, type_dir, img_name):
 	head_dir = head_dir[:18]+'image'
 	image = cv2.imread(pjoin(head_dir,type_dir,img_name), flags=cv2.IMREAD_COLOR)
-	w_dict = { b'image': image }
+	w_dict = { 'image': image }
 	w_dict = pickle.dumps(w_dict) # byte类型
 	return w_dict
 
 def get_digital_img(head_dir, type_dir, img_name):
 	image = cv2.imread(pjoin(head_dir,type_dir,img_name), flags=cv2.IMREAD_COLOR)
-	d_dict = { b'image': image }
+	d_dict = { 'image': image }
 	d_dict = pickle.dumps(d_dict) # byte类型
 	return d_dict
 
@@ -729,53 +723,63 @@ if __name__ == '__main__':
                    map_size=1099511627776*2, readonly=False,
                    meminit=False, map_async=True)
 	'''写入数据'''
-	# txn = env.begin(write=True)
-	# id_sum=-1
-	# bg_path = './dataset/background/'
-	# deform_type_list=['fold','curve']
-	# for idx1, type_path in enumerate(type_list):
-	# 	image_list = os.listdir(pjoin(data_dir, type_path))
-	# 	for idx2, image_path in enumerate(image_list):
-	# 		id_sum+=1
-	# 		deform_type1=np.random.choice(deform_type_list,p=[0.5,0.5])
-	# 		deform_type2=np.random.choice(deform_type_list,p=[0.5,0.5])
-	# 		print("deform_type1 of {0} is {1}".format(pjoin(type_path, image_path), deform_type1))
-	# 		print("deform_type2 of {0} is {1}".format(pjoin(type_path, image_path), deform_type2))
-	# 		w_dict = get_wild_img(data_dir, type_path, image_path)
-	# 		d_dict = get_digital_img(data_dir, type_path, image_path)
-	# 		pickle_dict1 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type1, idx='d1')
-	# 		pickle_dict2 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type2, idx='d2')
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = pickle_dict1)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = pickle_dict2)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'w1').encode(), value = w_dict)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'di').encode(), value = d_dict)
-	# 		txn.commit()
-	# 		txn = env.begin(write=True)
-    
-	# txn.commit()
-	# keys = [u'{}'.format(k).encode('ascii') for k in range(4*(idx1+1)*(idx2+1))]
-	# with env.begin(write=True) as txn:
-	# 	txn.put(b'__keys__', pickle.dumps(keys))
-	# 	txn.put(b'__len__', pickle.dumps(len(keys)))
+	txn = env.begin(write=True)
+	id_sum=-1
+	bg_path = './dataset/background/'
+	deform_type_list=['fold','curve']
+	
 
-	# print("Flushing database ...")
-	# env.sync()
-	# time_end = time.time() - time_begin
-	# mm, ss = divmod(time_end, 60)
-	# hh, mm = divmod(mm, 60)
-	# print("Total time : %02d:%02d:%02d\n" % (hh, mm, ss))
+	for idx1, type_path in enumerate(type_list):
+		image_list = os.listdir(pjoin(data_dir, type_path))
+		process_pool = Pool(8) # max=33
+		for idx2, image_path in enumerate(image_list):
+			# id_sum+=1
+			deform_type1=np.random.choice(deform_type_list,p=[0.5,0.5])
+			deform_type2=np.random.choice(deform_type_list,p=[0.5,0.5])
+			print("deform_type1 of {0} is {1}".format(pjoin(type_path, image_path), deform_type1))
+			print("deform_type2 of {0} is {1}".format(pjoin(type_path, image_path), deform_type2))
+			w_dict = get_wild_img(data_dir, type_path, image_path)
+			d_dict = get_digital_img(data_dir, type_path, image_path)
+			# pickle_dict1 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type1, 'd1')).get()
+			# pickle_dict2 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type2, 'd2')).get()
+			process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type1, 'd1'))
+			process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type2, 'd2'))
+			# # pickle_dict1 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type1, idx='d1')
+			# # pickle_dict2 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type2, idx='d2')
+			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = pickle_dict1)
+			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = pickle_dict2)
+			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'w1').encode(), value = w_dict)
+			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'di').encode(), value = d_dict)
+			# txn.commit()
+			# txn = env.begin(write=True)
+
+		process_pool.close()
+		process_pool.join()
+    
+	txn.commit()
+	keys = [u'{}'.format(k).encode('ascii') for k in range(4*(idx1+1)*(idx2+1))]
+	with env.begin(write=True) as txn:
+		txn.put(b'__keys__', pickle.dumps(keys))
+		txn.put(b'__len__', pickle.dumps(len(keys)))
+
+	print("Flushing database ...")
+	env.sync()
+	time_end = time.time() - time_begin
+	mm, ss = divmod(time_end, 60)
+	hh, mm = divmod(mm, 60)
+	print("Total time : %02d:%02d:%02d\n" % (hh, mm, ss))
 
 
     # 查看数据
 	print(env.stat())
 	txn = env.begin(write=False)
+	print(pickle.loads(txn.get(b'__len__')))
 	for num, (key, value) in enumerate(txn.cursor()):
-		# if num<(pickle.loads(txn.get(b'__len__'))):
-		if num<32:
+		if num<(pickle.loads(txn.get(b'__len__'))): # if num<32:
 			print("{} is over".format(key.decode()))
 			value = pickle.loads(value)
 			if key.decode()[-2:]=='w1' or key.decode()[-2:]=='di':
-				im=np.uint8(value[b'image'])
+				im=np.uint8(value['image'])
 				im=im[:,:,::-1]
 				im = Image.fromarray(im)
 				im.convert('RGB').save("./data_vis/{0}{1}.png".format(num, key.decode()[-2:]))
