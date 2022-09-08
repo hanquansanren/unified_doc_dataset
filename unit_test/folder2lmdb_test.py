@@ -25,7 +25,7 @@ def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
 
     db = lmdb.open(lmdb_path, subdir=True,
                    map_size=1099511627776*2, readonly=False,
-                   meminit=False, map_async=False)
+                   meminit=False, map_async=True)
     
     ###################################################
     '''写入数据'''

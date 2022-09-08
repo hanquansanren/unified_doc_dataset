@@ -700,25 +700,12 @@ def get_syn_image(path, bg_path, deform_type, idx, save_path='./output/'):
 	process_pool.join()
 	return pickle_dict
 
-def get_wild_img(head_dir, type_dir, img_name):
-	head_dir = head_dir[:18]+'image'
-	image = cv2.imread(pjoin(head_dir,type_dir,img_name), flags=cv2.IMREAD_COLOR)
-	w_dict = { b'image': image }
-	w_dict = pickle.dumps(w_dict) # byte类型
-	return w_dict
-
-def get_digital_img(head_dir, type_dir, img_name):
-	image = cv2.imread(pjoin(head_dir,type_dir,img_name), flags=cv2.IMREAD_COLOR)
-	d_dict = { b'image': image }
-	d_dict = pickle.dumps(d_dict) # byte类型
-	return d_dict
-
 if __name__ == '__main__':
 	print("the num of cpu core is {:4d}".format(mp.cpu_count()))
-	data_path='./dataset/smallda' #'./dataset/WarpDoc'
-	dataset_name="digital"
+	data_path='./unit_test'
+	dataset_name="train"
 	time_begin = time.time()
-	data_dir = os.path.expanduser(pjoin(data_path, dataset_name)) # './dataset/WarpDoc/digital'
+	data_dir = os.path.expanduser(pjoin(data_path, dataset_name)) # './unit_test/train'
 	print("Loading dataset from {}".format(data_dir))
     
 	type_list = os.listdir(pjoin(data_dir))
@@ -729,58 +716,49 @@ if __name__ == '__main__':
                    map_size=1099511627776*2, readonly=False,
                    meminit=False, map_async=True)
 	'''写入数据'''
-	# txn = env.begin(write=True)
-	# id_sum=-1
-	# bg_path = './dataset/background/'
-	# deform_type_list=['fold','curve']
-	# for idx1, type_path in enumerate(type_list):
-	# 	image_list = os.listdir(pjoin(data_dir, type_path))
-	# 	for idx2, image_path in enumerate(image_list):
-	# 		id_sum+=1
-	# 		deform_type1=np.random.choice(deform_type_list,p=[0.5,0.5])
-	# 		deform_type2=np.random.choice(deform_type_list,p=[0.5,0.5])
-	# 		print("deform_type1 of {0} is {1}".format(pjoin(type_path, image_path), deform_type1))
-	# 		print("deform_type2 of {0} is {1}".format(pjoin(type_path, image_path), deform_type2))
-	# 		w_dict = get_wild_img(data_dir, type_path, image_path)
-	# 		d_dict = get_digital_img(data_dir, type_path, image_path)
-	# 		pickle_dict1 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type1, idx='d1')
-	# 		pickle_dict2 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type2, idx='d2')
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = pickle_dict1)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = pickle_dict2)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'w1').encode(), value = w_dict)
-	# 		txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'di').encode(), value = d_dict)
-	# 		txn.commit()
-	# 		txn = env.begin(write=True)
+	txn = env.begin(write=True)
+	id_sum=-1
+	bg_path = './dataset/background/'
+	deform_type_list=['fold','curve']
+	for idx1, type_path in enumerate(type_list):
+		image_list = os.listdir(pjoin(data_dir, type_path))
+		for idx2, image_path in enumerate(image_list):
+			id_sum+=1
+			deform_type1=np.random.choice(deform_type_list,p=[0.5,0.5])
+			deform_type2=np.random.choice(deform_type_list,p=[0.5,0.5])
+			print("deform_type1 of {0} is {1}".format(pjoin(type_path, image_path), deform_type1))
+			print("deform_type2 of {0} is {1}".format(pjoin(type_path, image_path), deform_type2))
+			pickle_dict1 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type1, idx='d1')
+			pickle_dict2 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type2, idx='d2')
+			
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = pickle_dict1)
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = pickle_dict2)
+			txn.commit()
+			txn = env.begin(write=True)
     
-	# txn.commit()
-	# keys = [u'{}'.format(k).encode('ascii') for k in range(4*(idx1+1)*(idx2+1))]
-	# with env.begin(write=True) as txn:
-	# 	txn.put(b'__keys__', pickle.dumps(keys))
-	# 	txn.put(b'__len__', pickle.dumps(len(keys)))
+	txn.commit()
+	keys = [u'{}'.format(k).encode('ascii') for k in range((idx1+1)*(idx2+1))]
+	with env.begin(write=True) as txn:
+		txn.put(b'__keys__', pickle.dumps(keys))
+		txn.put(b'__len__', pickle.dumps(len(keys)))
 
-	# print("Flushing database ...")
-	# env.sync()
-	# time_end = time.time() - time_begin
-	# mm, ss = divmod(time_end, 60)
-	# hh, mm = divmod(mm, 60)
-	# print("Total time : %02d:%02d:%02d\n" % (hh, mm, ss))
+	print("Flushing database ...")
+	env.sync()
+	time_end = time.time() - time_begin
+	mm, ss = divmod(time_end, 60)
+	hh, mm = divmod(mm, 60)
+	print("Total time : %02d:%02d:%02d\n" % (hh, mm, ss))
 
 
     # 查看数据
 	print(env.stat())
 	txn = env.begin(write=False)
 	for num, (key, value) in enumerate(txn.cursor()):
-		# if num<(pickle.loads(txn.get(b'__len__'))):
-		if num<32:
+		if num<(pickle.loads(txn.get(b'__len__'))):
 			print("{} is over".format(key.decode()))
 			value = pickle.loads(value)
-			if key.decode()[-2:]=='w1' or key.decode()[-2:]=='di':
-				im=np.uint8(value[b'image'])
-				im=im[:,:,::-1]
-				im = Image.fromarray(im)
-				im.convert('RGB').save("./data_vis/{0}{1}.png".format(num, key.decode()[-2:]))
-			else:
-				check_vis(num, value['image'], value['label'])
+			check_vis(num, value['image'], value['label'])
+
 	print("over")
 	env.close()
 
