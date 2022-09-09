@@ -709,7 +709,8 @@ def get_digital_img(head_dir, type_dir, img_name):
 
 if __name__ == '__main__':
 	print("the num of cpu core is {:4d}".format(mp.cpu_count()))
-	data_path='./dataset/smallda' #'./dataset/WarpDoc'
+	# data_path='./dataset/smallda' #'./dataset/WarpDoc'
+	data_path='./dataset/WarpDoc'
 	dataset_name="digital"
 	time_begin = time.time()
 	data_dir = os.path.expanduser(pjoin(data_path, dataset_name)) # './dataset/WarpDoc/digital'
@@ -719,7 +720,7 @@ if __name__ == '__main__':
 	lmdb_path = pjoin(data_path, "{}.lmdb".format(dataset_name)) # './unit_test/train.lmdb'
 
 
-	env = lmdb.open('./train.lmdb', subdir=True,
+	env = lmdb.open('./warp0.lmdb', subdir=True,
                    map_size=1099511627776*2, readonly=False,
                    meminit=False, map_async=True)
 	'''写入数据'''
@@ -733,25 +734,30 @@ if __name__ == '__main__':
 		image_list = os.listdir(pjoin(data_dir, type_path))
 		process_pool = Pool(8) # max=33
 		for idx2, image_path in enumerate(image_list):
-			# id_sum+=1
+			id_sum+=1
+			res_l = []
 			deform_type1=np.random.choice(deform_type_list,p=[0.5,0.5])
 			deform_type2=np.random.choice(deform_type_list,p=[0.5,0.5])
 			print("deform_type1 of {0} is {1}".format(pjoin(type_path, image_path), deform_type1))
 			print("deform_type2 of {0} is {1}".format(pjoin(type_path, image_path), deform_type2))
 			w_dict = get_wild_img(data_dir, type_path, image_path)
 			d_dict = get_digital_img(data_dir, type_path, image_path)
+			# # 原始形式，.get()操作会引入阻塞
 			# pickle_dict1 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type1, 'd1')).get()
 			# pickle_dict2 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type2, 'd2')).get()
-			process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type1, 'd1'))
-			process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type2, 'd2'))
+			pickle_dict1 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type1, 'd1'))
+			pickle_dict2 = process_pool.apply_async(func=get_syn_image, args=(pjoin(data_dir, type_path, image_path), bg_path, deform_type2, 'd2'))
+			# # 无多线程版写法
 			# # pickle_dict1 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type1, idx='d1')
 			# # pickle_dict2 = get_syn_image(path=pjoin(data_dir, type_path, image_path), bg_path=bg_path, deform_type=deform_type2, idx='d2')
-			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = pickle_dict1)
-			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = pickle_dict2)
-			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'w1').encode(), value = w_dict)
-			# txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'di').encode(), value = d_dict)
-			# txn.commit()
-			# txn = env.begin(write=True)
+			res_l.append(pickle_dict1)
+			res_l.append(pickle_dict2)
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d1').encode(), value = res_l[0].get())
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'d2').encode(), value = res_l[1].get())
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'w1').encode(), value = w_dict)
+			txn.put(key = '{0}_{1}_{2}_{3}'.format(idx1,image_path[0:4],id_sum,'di').encode(), value = d_dict)
+			txn.commit()
+			txn = env.begin(write=True)
 
 		process_pool.close()
 		process_pool.join()
