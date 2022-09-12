@@ -1,7 +1,6 @@
 import os
 import os.path as osp
 from os.path import join as pjoin
-import six
 
 import lmdb
 import pickle
@@ -16,7 +15,7 @@ def image2byte(path):
     return bin_image
 
 
-def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
+def folder2lmdb(data_path, mode="train"):
     data_dir = osp.expanduser(pjoin(data_path, mode)) # './unit_test/train'
     print("Loading dataset from {}".format(data_dir))
     
@@ -35,18 +34,15 @@ def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
         image_list = os.listdir(pjoin(data_dir, type_path))
         for idx2, image_path in enumerate(image_list):
             id_sum+=1
+            # 这里只存了image，没有存label，如果需要存lable，需要自己写一个字典，分别设为value['image'], value['label']包装在一起，再写入38行的value参数
             txn.put(key='{0}_{1}_{2}'.format(idx1,image_path[0:4],id_sum).encode(), value=image2byte(pjoin(data_dir, type_path, image_path)))
             txn.commit()
             txn = db.begin(write=True)
-    
-    # finish iterating through dataset
     txn.commit()
     keys = [u'{}'.format(k).encode('ascii') for k in range((idx1+1)*(idx2+1))]
     with db.begin(write=True) as txn:
         txn.put(b'__keys__', pickle.dumps(keys))
         txn.put(b'__len__', pickle.dumps(len(keys)))
-
-    print("Flushing database ...")
     db.sync()
 
     ###################################################
@@ -64,7 +60,6 @@ def folder2lmdb(data_path, mode="train", write_frequency=5000, num_workers=16):
             img = cv2.imdecode(image_buf, cv2.IMREAD_COLOR)
             cv2.imwrite('./unit_test/{}.jpg'.format(key.decode()), img)
 
-
     print("end")
     db.close()
 
@@ -74,9 +69,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--folder", type=str, default="./unit_test") 
     parser.add_argument('-s', '--split', type=str, default="train")
-    parser.add_argument('--out', type=str, default="./")
-    parser.add_argument('-p', '--processes', type=int, default=1)
-
     args = parser.parse_args()
 
-    folder2lmdb(args.folder, num_workers=args.processes, mode=args.split)
+    folder2lmdb(args.folder, mode=args.split)
