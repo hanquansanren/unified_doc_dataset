@@ -45,27 +45,27 @@ def _make_dataset(root, prefix=('.jpg', '.png')):
             for img_name in img_list]
 
 
-class TestImageFolder(Dataset):
-    def __init__(self, root, in_size, prefix):
-        self.imgs = _make_dataset(root, prefix=prefix)
-        self.test_img_trainsform = transforms.Compose([
-            # 输入的如果是一个tuple，则按照数据缩放，但是如果是一个数字，则按比例缩放到短边等于该值
-            transforms.Resize((in_size, in_size)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
+# class TestImageFolder(Dataset):
+#     def __init__(self, root, in_size, prefix):
+#         self.imgs = _make_dataset(root, prefix=prefix)
+#         self.test_img_trainsform = transforms.Compose([
+#             # 输入的如果是一个tuple，则按照数据缩放，但是如果是一个数字，则按比例缩放到短边等于该值
+#             transforms.Resize((in_size, in_size)),
+#             transforms.ToTensor(),
+#             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+#         ])
     
-    def __getitem__(self, index):
-        img_path, gt_path = self.imgs[index]
+#     def __getitem__(self, index):
+#         img_path, gt_path = self.imgs[index]
         
-        img = Image.open(img_path).convert('RGB')
-        img_name = (img_path.split(os.sep)[-1]).split('.')[0]
+#         img = Image.open(img_path).convert('RGB')
+#         img_name = (img_path.split(os.sep)[-1]).split('.')[0]
         
-        img = self.test_img_trainsform(img)
-        return img, img_name
+#         img = self.test_img_trainsform(img)
+#         return img, img_name
     
-    def __len__(self):
-        return len(self.imgs)
+#     def __len__(self):
+#         return len(self.imgs)
 
 
 class TrainImageFolder(Dataset):

@@ -30,7 +30,7 @@ def check_vis(idx, im, lbl):
 
 
 if __name__ == '__main__':
-    env_db = lmdb.Environment('./test.lmdb')
+    env_db = lmdb.Environment('./train.lmdb')
     # env_db = lmdb.open("./test.lmdb")
     txn = env_db.begin()
     
@@ -42,6 +42,7 @@ if __name__ == '__main__':
             print('key is:', curs.get('d1'.encode()))
     
     print("end")
+    txn = env_db.begin()
     for key, value in txn.cursor():  #遍历
         print(key, type(value))
         value=pickle.loads(value)
