@@ -720,7 +720,7 @@ if __name__ == '__main__':
 	lmdb_path = pjoin(data_path, "{}.lmdb".format(dataset_name)) # './unit_test/train.lmdb'
 
 
-	env = lmdb.open('./warp3.lmdb', subdir=True,
+	env = lmdb.open('./warp4.lmdb', subdir=True,
                    map_size=1099511627776, readonly=False,
                    meminit=False, map_async=True)
 	'''写入数据'''
