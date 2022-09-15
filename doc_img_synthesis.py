@@ -717,17 +717,10 @@ if __name__ == '__main__':
 	print("Loading dataset from {}".format(data_dir))
     
 	type_list = os.listdir(pjoin(data_dir))
-<<<<<<< HEAD
 	# lmdb_path = pjoin(data_path, "{}.lmdb".format(dataset_name)) # './unit_test/train.lmdb'
 	lmdb_path = './warp4.lmdb'
 	print(lmdb_path, os.getcwd())
 	env = lmdb.open(lmdb_path, subdir=True,
-=======
-	lmdb_path = pjoin(data_path, "{}.lmdb".format(dataset_name)) # './unit_test/train.lmdb'
-
-
-	env = lmdb.open('./warp1.lmdb', subdir=True,
->>>>>>> edcca2b859471916501946829c1829d9ef64e102
                    map_size=1099511627776, readonly=False,
                    meminit=False, map_async=True)
 	'''写入数据'''
@@ -739,11 +732,7 @@ if __name__ == '__main__':
 
 	for idx1, type_path in enumerate(type_list):
 		image_list = os.listdir(pjoin(data_dir, type_path))
-<<<<<<< HEAD
 		process_pool = Pool(2) # max=33
-=======
-		process_pool = Pool(8) # max=33
->>>>>>> edcca2b859471916501946829c1829d9ef64e102
 		for idx2, image_path in enumerate(image_list):
 			id_sum+=1
 			res_l = []
@@ -789,7 +778,6 @@ if __name__ == '__main__':
 
     # 查看数据
 	print(env.stat())
-<<<<<<< HEAD
 	# txn = env.begin(write=False)
 	# print(pickle.loads(txn.get(b'__len__')))
 	# for num, (key, value) in enumerate(txn.cursor()):
@@ -803,21 +791,6 @@ if __name__ == '__main__':
 	# 			im.convert('RGB').save("./data_vis/{0}{1}.png".format(num, key.decode()[-2:]))
 	# 		else:
 	# 			check_vis(num, value['image'], value['label'])
-=======
-	txn = env.begin(write=False)
-	print(pickle.loads(txn.get(b'__len__')))
-	for num, (key, value) in enumerate(txn.cursor()):
-		if num<(pickle.loads(txn.get(b'__len__'))): # if num<32:
-			print("{} is over".format(key.decode()))
-			value = pickle.loads(value)
-			if key.decode()[-2:]=='w1' or key.decode()[-2:]=='di':
-				im=np.uint8(value['image'])
-				im=im[:,:,::-1]
-				im = Image.fromarray(im)
-				im.convert('RGB').save("./data_vis/{0}{1}.png".format(num, key.decode()[-2:]))
-			else:
-				check_vis(num, value['image'], value['label'])
->>>>>>> edcca2b859471916501946829c1829d9ef64e102
 	print("over")
 	env.close()
 
