@@ -11,20 +11,20 @@ def check_vis(idx, im, lbl):
     lbl : fiducial_points  # 61*61*2 
     '''
     im=np.uint8(im)
-    im=im[:,:,::-1]
+    # im=im[:,:,::-1]
     h=im.shape[0]*0.01
     w=im.shape[1]*0.01
     im = Image.fromarray(im)
     im.convert('RGB').save("./data_vis/img_{}.png".format(idx))
-    if lbl is not None:
-        fig, ax = plt.subplots(figsize = (w,h),facecolor='white')
-        ax.imshow(im)
-        ax.scatter(lbl[:,:,0].flatten(),lbl[:,:,1].flatten(),s=1.2,c='red',alpha=1)
-        ax.axis('off')
-        plt.subplots_adjust(left=0,bottom=0,right=1,top=1, hspace=0,wspace=0)
-        # plt.tight_layout()
-        plt.savefig('./synthesis_code/test/kk_{}.png'.format(idx))
-        plt.close()
+    # if lbl is not None:
+    #     fig, ax = plt.subplots(figsize = (w,h),facecolor='white')
+    #     ax.imshow(im)
+    #     ax.scatter(lbl[:,:,0].flatten(),lbl[:,:,1].flatten(),s=1.2,c='red',alpha=1)
+    #     ax.axis('off')
+    #     plt.subplots_adjust(left=0,bottom=0,right=1,top=1, hspace=0,wspace=0)
+    #     # plt.tight_layout()
+    #     plt.savefig('./synthesis_code/test/kk_{}.png'.format(idx))
+    #     plt.close()
 
 
 if __name__ == '__main__':
@@ -34,9 +34,9 @@ if __name__ == '__main__':
     print(env_db.stat()) 
 
 
-    for key, value in txn.cursor():  #遍历
+    for num, (key, value) in txn.cursor():  #遍历
         print(key)
         value=pickle.loads(value)
-        check_vis(8, value['image'], None)
+        check_vis(num, value[0][num][1], None)
 
     env_db.close()
