@@ -718,7 +718,7 @@ if __name__ == '__main__':
     
 	type_list = os.listdir(pjoin(data_dir))
 	# lmdb_path = pjoin(data_path, "{}.lmdb".format(dataset_name)) # './unit_test/train.lmdb'
-	lmdb_path = './warp9.lmdb'
+	lmdb_path = './warp14.lmdb'
 	# lmdb_path = './warp_for_debug.lmdb'
 
 
