@@ -30,22 +30,23 @@ def check_vis(idx, im, lbl):
 
 
 if __name__ == '__main__':
-    env_db = lmdb.Environment('./train.lmdb')
+    # env_db = lmdb.Environment('./merged_lmdb_total_1.lmdb')
+    # env_db = lmdb.Environment('./warp_for_debug.lmdb')
+    env_db = lmdb.Environment('./warp3.lmdb')
+    
     # env_db = lmdb.open("./test.lmdb")
     txn = env_db.begin()
     
     # get函数通过键值查询数据,如果要查询的键值没有对应数据，则输出None
-    txn.get(str('d1').encode())
+    # txn.get(str('d1').encode())
     print(env_db.stat()) 
-    with env_db.begin() as txn:
-        with txn.cursor() as curs:
-            print('key is:', curs.get('d1'.encode()))
-    
-    print("end")
+    # with env_db.begin() as txn:
+    #     with txn.cursor() as curs:
+    #         print('key is:', curs.get('d1'.encode()))
     txn = env_db.begin()
     for key, value in txn.cursor():  #遍历
         print(key, type(value))
-        value=pickle.loads(value)
-        check_vis(8, value['image'], value['label'])
+        # value=pickle.loads(value)
+        # check_vis(8, value['image'], value['label'])
 
     env_db.close()
