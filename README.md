@@ -1,4 +1,4 @@
-# Efficient-PyTorch
+# Weiguang Zhang's Mix-Doc dataset 
 My best practice of training large dataset using PyTorch.
 
 # Speed overview
