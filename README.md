@@ -1,5 +1,5 @@
-# Weiguang Zhang's Mix-Doc dataset 
-My best practice of training large dataset using PyTorch.
+# Weiguang Zhang's Triple-Mix-Doc dataset 
+A pre-release version
 
 # Speed overview
 By following the tips, we can reach achieve **~730 images/second** with PyTorch when training ResNet-50 on ImageNet. According to benchmark reported on [Tensorflow](https://www.tensorflow.org/performance/benchmarks) and [MXNet](https://github.com/apache/incubator-mxnet/tree/master/example/image-classification), the performance is still competitive.
